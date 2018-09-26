@@ -127,7 +127,28 @@ channels:
         # Default: true
         eventSource: true
 
+      peer0.org2.hf.fred.io:
+        # [Optional]. will this peer be sent transaction proposals for endorsement? The peer must
+        # have the chaincode installed. The app can also use this property to decide which peers
+        # to send the chaincode install request. Default: true
+        endorsingPeer: true
+
+        # [Optional]. will this peer be sent query proposals? The peer must have the chaincode
+        # installed. The app can also use this property to decide which peers to send the
+        # chaincode install request. Default: true
+        chaincodeQuery: true
+
+        # [Optional]. will this peer be sent query proposals that do not require chaincodes, like
+        # queryBlock(), queryTransaction(), etc. Default: true
+        ledgerQuery: true
+
+        # [Optional]. will this peer be the target of the SDK's listener registration? All peers can
+        # produce events but the app typically only needs to connect to one to listen to events.
+        # Default: true
+        eventSource: true
+
       peer1.org1.hf.fred.io:
+      peer1.org2.hf.fred.io:
 
     policies:
       #[Optional] options for retrieving channel configuration blocks
@@ -166,6 +187,21 @@ organizations:
     # Fabric-CA servers.
     certificateAuthorities:
       - ca.org1.hf.fred.io
+
+  org2:
+    mspid: org2.hf.fred.io
+    cryptoPath: peerOrganizations/org2.hf.fred.io/users/{userName}@org2.hf.fred.io/msp
+    peers:
+      - peer0.org2.hf.fred.io
+      - peer1.org2.hf.fred.io
+
+    # [Optional]. Certificate Authorities issue certificates for identification purposes in a Fabric based
+    # network. Typically certificates provisioning is done in a separate process outside of the
+    # runtime network. Fabric-CA is a special certificate authority that provides a REST APIs for
+    # dynamic certificate management (enroll, revoke, re-enroll). The following section is only for
+    # Fabric-CA servers.
+    certificateAuthorities:
+      - ca.org2.hf.fred.io
 
 #
 # List of orderers to send transaction and channel create/update requests to. For the time
@@ -242,6 +278,50 @@ peers:
       # Certificate location absolute path
       path: ${GOPATH}/src/github.com/dmcarrington/fred-service/fixtures/crypto-config/peerOrganizations/org1.hf.fred.io/tlsca/tlsca.org1.hf.fred.io-cert.pem
 
+  peer0.org2.hf.fred.io:
+    # this URL is used to send endorsement and query requests
+    url: localhost:7151
+    # eventUrl is only needed when using eventhub (default is delivery service)
+    eventUrl: localhost:7153
+
+    grpcOptions:
+      ssl-target-name-override: peer0.org2.hf.fred.io
+      # These parameters should be set in coordination with the keepalive policy on the server,
+      # as incompatible settings can result in closing of connection.
+      # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      allow-insecure: false
+
+    tlsCACerts:
+      # Certificate location absolute path
+      path: ${GOPATH}/src/github.com/dmcarrington/fred-service/fixtures/crypto-config/peerOrganizations/org2.hf.fred.io/tlsca/tlsca.org2.hf.fred.io-cert.pem
+
+  peer1.org2.hf.fred.io:
+    # this URL is used to send endorsement and query requests
+    url: localhost:8151
+    # eventUrl is only needed when using eventhub (default is delivery service)
+    eventUrl: localhost:8153
+
+    grpcOptions:
+      ssl-target-name-override: peer1.org2.hf.fred.io
+      # These parameters should be set in coordination with the keepalive policy on the server,
+      # as incompatible settings can result in closing of connection.
+      # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      allow-insecure: false
+
+    tlsCACerts:
+      # Certificate location absolute path
+      path: ${GOPATH}/src/github.com/dmcarrington/fred-service/fixtures/crypto-config/peerOrganizations/org2.hf.fred.io/tlsca/tlsca.org2.hf.fred.io-cert.pem
+
 #
 # Fabric-CA is a special kind of Certificate Authority provided by Hyperledger Fabric which allows
 # certificate management to be done via REST APIs. Application may choose to use a standard
@@ -263,6 +343,21 @@ certificateAuthorities:
       # Certificate location absolute path
       path: ${GOPATH}/src/github.com/dmcarrington/fred-service/fixtures/crypto-config/peerOrganizations/org1.hf.fred.io/ca/ca.org1.hf.fred.io-cert.pem
 
+  ca.org2.hf.fred.io:
+    url: http://localhost:7154
+    # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
+    # needed to enroll and invoke new users.
+    httpOptions:
+      verify: false
+    registrar:
+      enrollId: admin
+      enrollSecret: adminpw
+    # [Optional] The optional name of the CA.
+    caName: ca.org2.hf.fred.io
+    tlsCACerts:
+      # Certificate location absolute path
+      path: ${GOPATH}/src/github.com/dmcarrington/fred-service/fixtures/crypto-config/peerOrganizations/org2.hf.fred.io/ca/ca.org2.hf.fred.io-cert.pem
+
 entityMatchers:
   peer:
     - pattern: (\w*)peer0.org1.hf.fred.io(\w*)
@@ -276,6 +371,18 @@ entityMatchers:
       eventUrlSubstitutionExp: localhost:8053
       sslTargetOverrideUrlSubstitutionExp: peer1.org1.hf.fred.io
       mappedHost: peer1.org1.hf.fred.io
+
+    - pattern: (\w*)peer0.org2.hf.fred.io(\w*)
+      urlSubstitutionExp: localhost:7151
+      eventUrlSubstitutionExp: localhost:7153
+      sslTargetOverrideUrlSubstitutionExp: peer0.org2.hf.fred.io
+      mappedHost: peer0.org2.hf.fred.io
+
+    - pattern: (\w*)peer1.org2.hf.fred.io(\w*)
+      urlSubstitutionExp: localhost:8151
+      eventUrlSubstitutionExp: localhost:8153
+      sslTargetOverrideUrlSubstitutionExp: peer1.org2.hf.fred.io
+      mappedHost: peer1.org2.hf.fred.io
 
   orderer:
     - pattern: (\w*)orderer.hf.fred.io(\w*)
